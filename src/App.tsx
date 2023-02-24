@@ -2,12 +2,15 @@ import React, { Component } from 'react';
 import DataStreamer, { ServerRespond } from './DataStreamer';
 import Graph from './Graph';
 import './App.css';
+import { clearInterval } from 'timers';
 
 /**
  * State declaration for <App />
  */
 interface IState {
   data: ServerRespond[],
+  // This property showGraph is important as it turns on only when the user presses on the show graph button
+  showGraph: boolean
 }
 
 /**
@@ -22,6 +25,8 @@ class App extends Component<{}, IState> {
       // data saves the server responds.
       // We use this state to parse data down to the child element (Graph) as element property
       data: [],
+      // Here we are setting showGraph by default as false so that the data starts streaming and the graph gets displayed only when the user presses the button
+      showGraph: false
     };
   }
 
@@ -29,18 +34,33 @@ class App extends Component<{}, IState> {
    * Render Graph react component with state.data parse as property data
    */
   renderGraph() {
-    return (<Graph data={this.state.data}/>)
+    // This implements the conditional functionality of the show graph button
+    if (this.state.showGraph) {
+      return (<Graph data={this.state.data}/>)
+    }
   }
 
   /**
    * Get new data from server and update the state with the new data
    */
   getDataFromServer() {
-    DataStreamer.getData((serverResponds: ServerRespond[]) => {
-      // Update the state by creating a new array of data that consists of
-      // Previous data in the state and the new data from server
-      this.setState({ data: [...this.state.data, ...serverResponds] });
-    });
+    // This variable makes sure that the interval does not run forever
+    let x = 0;
+    const interval = setInterval(()=>{
+      // Getting the data from the DataStreamer
+      DataStreamer.getData((serverResponds: ServerRespond[])=> {
+        // Change the state
+        this.setState({
+          data: serverResponds,
+          showGraph: true
+        });
+      });
+      // Make sure the interval does not run forever
+      x++;
+      if (x > 1000) {
+        clearInterval(interval)
+      }
+    }, 100)
   }
 
   /**
